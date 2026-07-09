@@ -1,0 +1,15 @@
+{
+  "name": "premarket-scanner",
+  "version": "1.0.0",
+  "description": "Pre-market batch scanner untuk seluruh saham IDX - tahap 1 dari AI Data Engine",
+  "main": "api/scan.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}

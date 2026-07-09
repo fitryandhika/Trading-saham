@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/scan?offset=0&limit=100",
+      "schedule": "0 1 * * 1-5"
+    }
+  ]
+}
