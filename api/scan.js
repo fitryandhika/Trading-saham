@@ -27,6 +27,7 @@ module.exports = async (req, res) => {
     const sectors = req.query.sectors
       ? req.query.sectors.split(',').map((s) => s.trim())
       : [];
+    const includeCandles = req.query.includeCandles === 'true';
 
     if (limit > 200) {
       return res.status(400).json({
@@ -34,7 +35,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const result = await runScanChunk({ offset, limit, concurrency, sectors });
+    const result = await runScanChunk({ offset, limit, concurrency, sectors, includeCandles });
 
     res.status(200).json(result);
   } catch (err) {
