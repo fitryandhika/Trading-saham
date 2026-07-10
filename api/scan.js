@@ -24,6 +24,9 @@ module.exports = async (req, res) => {
     const offset = parseInt(req.query.offset, 10) || 0;
     const limit = parseInt(req.query.limit, 10) || 100;
     const concurrency = parseInt(req.query.concurrency, 10) || 10;
+    const sectors = req.query.sectors
+      ? req.query.sectors.split(',').map((s) => s.trim())
+      : [];
 
     if (limit > 200) {
       return res.status(400).json({
@@ -31,7 +34,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const result = await runScanChunk({ offset, limit, concurrency });
+    const result = await runScanChunk({ offset, limit, concurrency, sectors });
 
     res.status(200).json(result);
   } catch (err) {
