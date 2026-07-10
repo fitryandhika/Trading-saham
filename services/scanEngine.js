@@ -20,18 +20,13 @@ const { runWithConcurrency } = require('../utils/concurrencyLimiter');
  * @param {number} options.offset - mulai dari index ke berapa di daftar ticker
  * @param {number} options.limit - berapa banyak ticker diproses di panggilan ini
  * @param {number} options.concurrency - jumlah fetch paralel
- * @param {string[]} options.excludeBoards - papan yang di-skip (misal 'Pemantauan Khusus')
+ * @param {string[]} options.sectors - kalau diisi, hanya scan sektor ini
  * @returns {Promise<Object>} { total, processed, offset, nextOffset, done, results, errors }
  */
 async function runScanChunk(options = {}) {
-  const {
-    offset = 0,
-    limit = 100,
-    concurrency = 10,
-    excludeBoards = ['Pemantauan Khusus'],
-  } = options;
+  const { offset = 0, limit = 100, concurrency = 10, sectors = [] } = options;
 
-  const allTickers = await getAllTickers({ excludeBoards });
+  const allTickers = await getAllTickers({ sectors });
   const chunk = allTickers.slice(offset, offset + limit);
 
   if (chunk.length === 0) {
@@ -52,7 +47,7 @@ async function runScanChunk(options = {}) {
     async (tickerInfo) => {
       const { ticker } = tickerInfo;
       const data = await fetchOhlcv(ticker);
-      return { ...data, name: tickerInfo.name, board: tickerInfo.board };
+      return { ...data, name: tickerInfo.name, sector: tickerInfo.sector };
     },
     { concurrency, retries: 2, retryDelayMs: 400 }
   );
