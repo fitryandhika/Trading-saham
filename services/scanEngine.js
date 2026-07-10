@@ -14,6 +14,8 @@
 const { getAllTickers } = require('./tickerService');
 const { fetchOhlcv } = require('./yahooFetcher');
 const { runWithConcurrency } = require('../utils/concurrencyLimiter');
+const { analyzeStock } = require('../engine/analyzeStock');
+const { scoreStock } = require('../engine/decisionEngine');
 
 /**
  * @param {Object} options
@@ -21,10 +23,17 @@ const { runWithConcurrency } = require('../utils/concurrencyLimiter');
  * @param {number} options.limit - berapa banyak ticker diproses di panggilan ini
  * @param {number} options.concurrency - jumlah fetch paralel
  * @param {string[]} options.sectors - kalau diisi, hanya scan sektor ini
+ * @param {boolean} options.includeCandles - sertakan raw candle di response (default false, payload lebih ringan)
  * @returns {Promise<Object>} { total, processed, offset, nextOffset, done, results, errors }
  */
 async function runScanChunk(options = {}) {
-  const { offset = 0, limit = 100, concurrency = 10, sectors = [] } = options;
+  const {
+    offset = 0,
+    limit = 100,
+    concurrency = 10,
+    sectors = [],
+    includeCandles = false,
+  } = options;
 
   const allTickers = await getAllTickers({ sectors });
   const chunk = allTickers.slice(offset, offset + limit);
@@ -47,7 +56,20 @@ async function runScanChunk(options = {}) {
     async (tickerInfo) => {
       const { ticker } = tickerInfo;
       const data = await fetchOhlcv(ticker);
-      return { ...data, name: tickerInfo.name, sector: tickerInfo.sector };
+      const analysis = analyzeStock(data.candles);
+      const decision = scoreStock(analysis, data.snapshot);
+
+      const output = {
+        ticker: data.ticker,
+        symbol: data.symbol,
+        name: tickerInfo.name,
+        sector: tickerInfo.sector,
+        snapshot: data.snapshot,
+        analysis,
+        decision,
+      };
+      if (includeCandles) output.candles = data.candles;
+      return output;
     },
     { concurrency, retries: 2, retryDelayMs: 400 }
   );
@@ -62,6 +84,9 @@ async function runScanChunk(options = {}) {
       errors.push({ ticker: chunk[i].ticker, error: r.error });
     }
   });
+
+  // Urutkan dari skor tertinggi ke terendah supaya "Strong Buy" muncul duluan
+  results.sort((a, b) => (b.decision.score || -1) - (a.decision.score || -1));
 
   const nextOffset = offset + limit < allTickers.length ? offset + limit : null;
 
