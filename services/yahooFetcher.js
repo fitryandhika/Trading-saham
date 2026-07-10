@@ -17,7 +17,7 @@ const YAHOO_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
  * @returns {Promise<Object>} snapshot ringkas + raw candles
  */
 async function fetchOhlcv(ticker, options = {}) {
-  const { range = '6mo', interval = '1d' } = options;
+  const { range = '1y', interval = '1d' } = options;
   const symbol = `${ticker.toUpperCase()}.JK`;
   const url = `${YAHOO_CHART_URL}/${symbol}?range=${range}&interval=${interval}`;
 
